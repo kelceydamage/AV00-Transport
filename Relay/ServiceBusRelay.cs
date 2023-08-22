@@ -1,4 +1,5 @@
 ﻿using NetMQ;
+using Transport.Messages;
 using Transport.Sockets;
 
 namespace Transport.Relay
@@ -27,9 +28,11 @@ namespace Transport.Relay
 
         public void ReceiveFrameString()
         {
-            string message = PullSocket.ReceiveFrameString();
-            Console.WriteLine("Relay Received {0}", message);
-            PublisherSocket.SendMoreFrame("test").SendFrame(message);
+            NetMQMessage message = PullSocket.ReceiveMultipartMessage(4);
+            TaskEvent MyTask = TaskEvent.FromNetMQMessage(message);
+            Console.WriteLine($"Relay Received {MyTask.Topic}-{MyTask.TaskId}-{MyTask.Message}");
+            TaskEventReceipt MyTaskReceipt = new TaskEventReceipt(MyTask.Topic, MyTask.TaskId, TaskEventProcessingState.Processed);
+            PublisherSocket.SendMultipartMessage(MyTaskReceipt.ToNetMQMessage());
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using NetMQ;
+using Transport.Messages;
 using Transport.Sockets;
 
 namespace Transport.Client
@@ -16,28 +17,22 @@ namespace Transport.Client
             SubscriberSocket = new Subscriber(SubscriberSocketAddress);
         }
 
-        public void SubscribeForUpdates(string[] Topics)
+        public void PushTask(TaskEvent Task)
         {
-            foreach (string topic in Topics)
-                SubscriberSocket.Subscribe(topic);
-            SubscribedTopics = Topics;
+            PushSocket.SendMultipartMessage(Task.ToNetMQMessage());
         }
 
-        public void SubscribeForUpdates(string Topic)
+        public void RegisterEventTopicAndCallback(string TopicName, Func<NetMQMessage, bool>? CallbackFunction)
         {
-            SubscriberSocket.Subscribe(Topic);
-            SubscribedTopics = new string[] { Topic };
-        }
-
-        public void PushTask(string Message)
-        {
-            PushSocket.SendFrame(Message);
-        }
-
-        public void RegisterEventTopicCallback(string TopicName, Func<NetMQMessage, bool> CallbackFunction)
-        {
-            if (!EventTopicCallbacks.ContainsKey(TopicName))
+            if (!EventTopicCallbacks.ContainsKey(TopicName) && CallbackFunction is not null)
                 EventTopicCallbacks.Add(TopicName, CallbackFunction);
+            SubscriberSocket.Subscribe(TopicName);
+        }
+
+        public void RegisterEventTopicAndCallback(Dictionary<string, Func<NetMQMessage, bool>?> EventTopicCallbacks)
+        {
+            foreach (KeyValuePair<string, Func<NetMQMessage, bool>?> EventTopicCallback in EventTopicCallbacks)
+                RegisterEventTopicAndCallback(EventTopicCallback.Key, EventTopicCallback.Value);
         }
 
         public List<(NetMQMessage, bool?)> CollectEvents(int BatchSize = 1)
@@ -52,7 +47,7 @@ namespace Transport.Client
             var message = new NetMQMessage();
             for (int count = 0; count < batchSize; count++)
             {
-                if (!SubscriberSocket.TryReceiveMultipartMessage(TimeSpan.FromMilliseconds(500), message: ref message, 2))
+                if (!SubscriberSocket.TryReceiveMultipartMessage(TimeSpan.FromMilliseconds(500), message: ref message, 4))
                 {
                     Console.WriteLine($"No events found");
                     break;
