@@ -30,16 +30,16 @@ namespace Transport.Messages
     public struct TaskEvent: IEvent
     {
         public readonly EnumEventType EventType { get => EnumEventType.TaskEvent; }
-        public readonly string Topic { get => topic; }
-        private string topic;
+        public readonly string ServiceName { get => serviceName; }
+        private string serviceName;
         public readonly Guid TaskId { get => taskId; }
         private  Guid taskId;
         public readonly DataDict? Data { get => data; }
         private DataDict? data;
 
-        public TaskEvent(string Topic, DataDict DataDict, Guid? TaskId=null)
+        public TaskEvent(string ServiceName, DataDict DataDict, Guid? TaskId=null)
         {
-            topic = Topic;
+            serviceName = ServiceName;
             if (TaskId != null)
             {
                 taskId = (Guid)TaskId;
@@ -54,7 +54,7 @@ namespace Transport.Messages
         public readonly NetMQMessage ToNetMQMessage()
         {
             NetMQMessage MQMessage = new();
-            MQMessage.Append(Topic);
+            MQMessage.Append(ServiceName);
             MQMessage.Append(EventType.ToString());
             MQMessage.Append(TaskId.ToString());
             MQMessage.Append(JsonSerializer.Serialize(Data));
@@ -63,33 +63,38 @@ namespace Transport.Messages
 
         public void FromNetMQMessage(NetMQMessage MQMessage)
         {
-            topic = MQMessage[0].ConvertToString();
+            serviceName = MQMessage[0].ConvertToString();
             taskId = Guid.Parse(MQMessage[2].ConvertToString());
             data = JsonSerializer.Deserialize<DataDict>(MQMessage[3].ConvertToString());
+        }
+
+        public readonly TaskEventReceipt GenerateReceipt(EnumTaskEventProcessingState ProcessingState)
+        {
+            return new TaskEventReceipt(ServiceName, TaskId, ProcessingState);
         }
     }
 
     public struct TaskEventReceipt: IEvent
     {
         public readonly EnumEventType EventType { get => EnumEventType.TaskEventReceipt; }
-        public readonly string Topic { get => topic; }
-        private string topic;
+        public readonly string ServiceName { get => serviceName; }
+        private string serviceName;
         public readonly Guid TaskId { get => taskId; }
         private Guid taskId;
         public readonly EnumTaskEventProcessingState ProcessingState { get => processingState; }
         public EnumTaskEventProcessingState processingState;
 
-        public TaskEventReceipt(string Topic, Guid TaskId, EnumTaskEventProcessingState ProcessingState)
+        public TaskEventReceipt(string ServiceName, Guid TaskId, EnumTaskEventProcessingState ProcessingState)
         {
-            this.topic = Topic;
-            this.taskId = TaskId;
-            this.processingState = ProcessingState;
+            serviceName = ServiceName;
+            taskId = TaskId;
+            processingState = ProcessingState;
         }
 
         public readonly NetMQMessage ToNetMQMessage()
         {
             NetMQMessage MQMessage = new();
-            MQMessage.Append(Topic);
+            MQMessage.Append(ServiceName);
             MQMessage.Append(EventType.ToString());
             MQMessage.Append(TaskId.ToString());
             MQMessage.Append(ProcessingState.ToString());
@@ -98,7 +103,7 @@ namespace Transport.Messages
 
         public void FromNetMQMessage(NetMQMessage MQMessage)
         {
-            topic = MQMessage[0].ConvertToString();
+            serviceName = MQMessage[0].ConvertToString();
             taskId = Guid.Parse(MQMessage[2].ConvertToString());
             processingState = (EnumTaskEventProcessingState)Enum.Parse(typeof(EnumTaskEventProcessingState), MQMessage[3].ConvertToString());
         }

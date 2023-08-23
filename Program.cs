@@ -15,7 +15,7 @@ namespace Transport
             TaskEventReceipt MyTaskReceipt = new();
             MyTaskReceipt.FromNetMQMessage(MQMessage);
             Console.WriteLine("* Inside Callback");
-            Console.WriteLine($"* From Server: topic={MyTaskReceipt.Topic}, State={MyTaskReceipt.ProcessingState}");
+            Console.WriteLine($"* From Server: topic={MyTaskReceipt.ServiceName}, State={MyTaskReceipt.ProcessingState}");
             Console.WriteLine($"* Frame count={MQMessage.FrameCount}-MessageLength={Event.GetFrameCountByEventType(MyTaskReceipt.EventType)}");
             return true;
         }
@@ -24,15 +24,11 @@ namespace Transport
         {
             Console.Title = "NetMQ Transport Relay";
 
-            ServiceBusRelay Bus = new(
-                ConfigurationManager.ConnectionStrings["InboundTasks"].ConnectionString,
-                ConfigurationManager.ConnectionStrings["OutboundTaskReceipts"].ConnectionString,
-                int.Parse(ConfigurationManager.AppSettings["InboundTaskCollectionBatchSize"] ?? throw new Exception())
-            );
+            ServiceBusRelay Bus = new(ConfigurationManager.ConnectionStrings, ConfigurationManager.AppSettings);
             ServiceBusClient BusClient = new("tcp://localhost:5556", "tcp://localhost:5557");
             TaskEvent MyTask = new("MyTaskStream", new DataDict() { { "message", "Hello World" } });
 
-            BusClient.RegisterEventTopicAndCallback(MyTask.Topic, Callback);
+            BusClient.RegisterServiceEventCallback(MyTask.ServiceName, Callback);
             BusClient.PushTask(MyTask);
 
             Bus.ForwardMessage();

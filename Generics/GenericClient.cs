@@ -54,7 +54,7 @@ namespace Transport.Generics
 
         public override MQMessageBuffer CollectAndInvokeMQMessages(int batchSize, short FrameCount, CallbackDict? Callbacks = null)
         {
-            return CollectAndInvokeMQMessagesByBatch<SubscriberSocket>(socket, batchSize, FrameCount, Callbacks ?? new CallbackDict());
+            return CollectAndInvokeMQMessagesByBatch(socket, batchSize, FrameCount, Callbacks ?? new CallbackDict());
         }
     }
 
@@ -68,7 +68,7 @@ namespace Transport.Generics
 
         public void SendMQMessage(NetMQMessage message)
         {
-            SendMQMessage<PublisherSocket>(socket, message);
+            SendMQMessage(socket, message);
         }
     }
 
@@ -82,7 +82,7 @@ namespace Transport.Generics
 
         public void SendMQMessage(NetMQMessage message)
         {
-            SendMQMessage<PushSocket>(socket, message);
+            SendMQMessage(socket, message);
         }
     }
 
@@ -96,7 +96,7 @@ namespace Transport.Generics
 
         public override MQMessageBuffer CollectAndInvokeMQMessages(int batchSize, short FrameCount, CallbackDict? Callbacks = null)
         {
-            return CollectAndInvokeMQMessagesByBatch<PullSocket>(socket, batchSize, FrameCount, Callbacks ?? new CallbackDict());
+            return CollectAndInvokeMQMessagesByBatch(socket, batchSize, FrameCount, Callbacks ?? new CallbackDict());
         }
     }
 }

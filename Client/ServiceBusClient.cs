@@ -26,19 +26,19 @@ namespace Transport.Client
             pushClient.SendMQMessage(Task.ToNetMQMessage());
         }
 
-        public void RegisterEventTopicAndCallback(string TopicName, Callback? CallbackFunction)
+        public void RegisterServiceEventCallback(string ServiceName, Callback? CallbackFunction)
         {
-            if (!EventTopicCallbacks.ContainsKey(TopicName) && CallbackFunction is not null)
-                EventTopicCallbacks.Add(TopicName, CallbackFunction);
-            subscriberClient.Subscribe(TopicName);
+            if (!EventTopicCallbacks.ContainsKey(ServiceName) && CallbackFunction is not null)
+                EventTopicCallbacks.Add(ServiceName, CallbackFunction);
+            subscriberClient.Subscribe(ServiceName);
         }
 
         public void RegisterEventTopicAndCallback(CallbackDict EventTopicCallbacks)
         {
             foreach (KeyValuePair<string, Callback> EventTopicCallback in EventTopicCallbacks)
-                RegisterEventTopicAndCallback(EventTopicCallback.Key, EventTopicCallback.Value);
+                RegisterServiceEventCallback(EventTopicCallback.Key, EventTopicCallback.Value);
         }
-
+        
         public MQMessageBuffer CollectEventReceipts(int batchSize = 1)
         {
             return subscriberClient.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
