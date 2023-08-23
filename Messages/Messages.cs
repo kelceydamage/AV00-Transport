@@ -2,87 +2,103 @@
 
 namespace Transport.Messages
 {
-    public readonly struct TaskEvent
+    public interface IEvent
     {
-        public readonly string Topic;
-        public readonly Guid TaskId;
-        public readonly string Message;
+        public EnumEventType EventType { get; }
+        public NetMQMessage ToNetMQMessage();
+        public void FromNetMQMessage(NetMQMessage netMessage);
+    }
+
+    public struct TaskEvent: IEvent
+    {
+        public readonly EnumEventType EventType { get => EnumEventType.TaskEvent; }
+        public readonly string Topic { get => topic; }
+        private string topic;
+        public readonly Guid TaskId { get => taskId; }
+        private  Guid taskId;
+        public readonly string Message { get => message; }
+        private  string message;
         public const short MessageLength = 4;
 
         public TaskEvent(string Topic, string Message, Guid? TaskId=null)
         {
-            this.Topic = Topic;
+            topic = Topic;
             if (TaskId != null)
             {
-                this.TaskId = (Guid)TaskId;
+                taskId = (Guid)TaskId;
             }
             else
             {
-                this.TaskId = Guid.NewGuid();
+                taskId = Guid.NewGuid();
             }
-            this.TaskId = Guid.NewGuid();
-            this.Message = Message;
+            message = Message;
         }
 
         public NetMQMessage ToNetMQMessage()
         {
-            NetMQMessage message = new NetMQMessage();
-            message.Append(Topic);
-            message.Append(MessageLength);
-            message.Append(TaskId.ToString());
-            message.Append(Message);
-            return message;
+            NetMQMessage MQMessage = new NetMQMessage();
+            MQMessage.Append(Topic);
+            MQMessage.Append(MessageLength);
+            MQMessage.Append(TaskId.ToString());
+            MQMessage.Append(Message);
+            return MQMessage;
         }
 
-        public static TaskEvent FromNetMQMessage(NetMQMessage message)
+        public void FromNetMQMessage(NetMQMessage MQMessage)
         {
-            return new TaskEvent(
-                Topic: message[0].ConvertToString(),
-                TaskId: Guid.Parse(message[2].ConvertToString()),
-                Message: message[3].ConvertToString()
-            );
+            topic = MQMessage[0].ConvertToString();
+            taskId = Guid.Parse(MQMessage[2].ConvertToString());
+            message = MQMessage[3].ConvertToString();
         }
     }
 
-    public struct TaskEventReceipt
+    public struct TaskEventReceipt: IEvent
     {
-        public readonly string Topic;
-        public readonly Guid TaskId;
-        public TaskEventProcessingState ProcessingState;
+        public readonly EnumEventType EventType { get => EnumEventType.TaskEventReceipt; }
+        public readonly string Topic { get => topic; }
+        private string topic;
+        public readonly Guid TaskId { get => taskId; }
+        private Guid taskId;
+        public readonly EnumTaskEventProcessingState ProcessingState { get => processingState; }
+        public EnumTaskEventProcessingState processingState;
         public const short MessageLength = 4;
 
-        public TaskEventReceipt(string Topic, Guid TaskId, TaskEventProcessingState ProcessingState)
+        public TaskEventReceipt(string Topic, Guid TaskId, EnumTaskEventProcessingState ProcessingState)
         {
-            this.Topic = Topic;
-            this.TaskId = TaskId;
-            this.ProcessingState = ProcessingState;
+            this.topic = Topic;
+            this.taskId = TaskId;
+            this.processingState = ProcessingState;
         }
 
         public NetMQMessage ToNetMQMessage()
         {
-            NetMQMessage message = new NetMQMessage();
-            message.Append(Topic);
-            message.Append(MessageLength);
-            message.Append(TaskId.ToString());
-            message.Append(ProcessingState.ToString());
-            return message;
+            NetMQMessage MQMessage = new NetMQMessage();
+            MQMessage.Append(Topic);
+            MQMessage.Append(MessageLength);
+            MQMessage.Append(TaskId.ToString());
+            MQMessage.Append(ProcessingState.ToString());
+            return MQMessage;
         }
 
-        public static TaskEventReceipt FromNetMQMessage(NetMQMessage message)
+        public void FromNetMQMessage(NetMQMessage MQMessage)
         {
-            return new TaskEventReceipt(
-                Topic: message[0].ConvertToString(),
-                TaskId: Guid.Parse(message[2].ConvertToString()),
-                ProcessingState: (TaskEventProcessingState)Enum.Parse(typeof(TaskEventProcessingState), message[3].ConvertToString())
-            );
+            topic = MQMessage[0].ConvertToString();
+            taskId = Guid.Parse(MQMessage[2].ConvertToString());
+            processingState = (EnumTaskEventProcessingState)Enum.Parse(typeof(EnumTaskEventProcessingState), MQMessage[3].ConvertToString());
         }
     }
 
-    public enum TaskEventProcessingState
+    public enum EnumTaskEventProcessingState
     {
         Unprocessed,
         Processing,
         Processed,
         Error
+    }
+
+    public enum EnumEventType
+    {
+        TaskEvent,
+        TaskEventReceipt
     }
 }

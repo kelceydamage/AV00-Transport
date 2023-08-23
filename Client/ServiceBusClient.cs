@@ -1,62 +1,49 @@
 ﻿using NetMQ;
+using NetMQ.Sockets;
+using Transport.Generics;
 using Transport.Messages;
-using Transport.Sockets;
+using Transport;
 
 namespace Transport.Client
 {
+    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
+    using Callback = Func<NetMQMessage, bool>;
+    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
+
     public class ServiceBusClient
     {
-        Subscriber SubscriberSocket;
-        Push PushSocket;
-        private Dictionary<string, Func<NetMQMessage, bool>> EventTopicCallbacks = new Dictionary<string, Func<NetMQMessage, bool>>();
+        private SubscriberClient subscriberClient;
+        private PushClient pushClient;
+        private CallbackDict EventTopicCallbacks = new CallbackDict();
         public string[]? SubscribedTopics;
 
         public ServiceBusClient(string PushSocketAddress, string SubscriberSocketAddress)
         {
-            PushSocket = new Push(PushSocketAddress);
-            SubscriberSocket = new Subscriber(SubscriberSocketAddress);
+            pushClient = new PushClient(PushSocketAddress);
+            subscriberClient = new SubscriberClient(SubscriberSocketAddress);
         }
 
         public void PushTask(TaskEvent Task)
         {
-            PushSocket.SendMultipartMessage(Task.ToNetMQMessage());
+            pushClient.PushMQMessage(Task.ToNetMQMessage());
         }
 
-        public void RegisterEventTopicAndCallback(string TopicName, Func<NetMQMessage, bool>? CallbackFunction)
+        public void RegisterEventTopicAndCallback(string TopicName, Callback? CallbackFunction)
         {
             if (!EventTopicCallbacks.ContainsKey(TopicName) && CallbackFunction is not null)
                 EventTopicCallbacks.Add(TopicName, CallbackFunction);
-            SubscriberSocket.Subscribe(TopicName);
+            subscriberClient.Subscribe(TopicName);
         }
 
-        public void RegisterEventTopicAndCallback(Dictionary<string, Func<NetMQMessage, bool>?> EventTopicCallbacks)
+        public void RegisterEventTopicAndCallback(CallbackDict EventTopicCallbacks)
         {
-            foreach (KeyValuePair<string, Func<NetMQMessage, bool>?> EventTopicCallback in EventTopicCallbacks)
+            foreach (KeyValuePair<string, Callback> EventTopicCallback in EventTopicCallbacks)
                 RegisterEventTopicAndCallback(EventTopicCallback.Key, EventTopicCallback.Value);
         }
 
-        public List<(NetMQMessage, bool?)> CollectEvents(int BatchSize = 1)
+        public MQMessageBuffer CollectEventReceipts(int batchSize = 1)
         {
-            return CollectEventsByBatch(BatchSize);
-        }
-
-        // If there are pending messages, collect [BatchSize] number and return them.
-        private List<(NetMQMessage, bool?)> CollectEventsByBatch(int batchSize)
-        {
-            List<(NetMQMessage, bool?)> collectedEvents = new();
-            var message = new NetMQMessage();
-            for (int count = 0; count < batchSize; count++)
-            {
-                if (!SubscriberSocket.TryReceiveMultipartMessage(TimeSpan.FromMilliseconds(500), message: ref message, 4))
-                {
-                    Console.WriteLine($"No events found");
-                    break;
-                }
-                EventTopicCallbacks.TryGetValue(message[0].ConvertToString(), out Func<NetMQMessage, bool>? callback);
-                // TODO: Make async
-                collectedEvents.Add((message, callback?.Invoke(message)));
-            }
-            return collectedEvents;
+            return subscriberClient.CollectAndInvokeMQMessages(batchSize, EventTopicCallbacks);
         }
     }
 }

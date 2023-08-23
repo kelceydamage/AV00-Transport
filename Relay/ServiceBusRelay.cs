@@ -1,38 +1,43 @@
 ﻿using NetMQ;
+using NetMQ.Sockets;
 using Transport.Messages;
-using Transport.Sockets;
 
 namespace Transport.Relay
 {
     public class ServiceBusRelay
     {
-        Publisher PublisherSocket;
-        Pull PullSocket;
+        private PublisherSocket publisherSocket;
+        private PullSocket pullSocket;
 
         public ServiceBusRelay(string? PullSocketAddress, string? PublisherSockerAddress)
         {
-            PublisherSocket = new Publisher(PublisherSockerAddress);
-            PullSocket = new Pull(PullSocketAddress);
+            publisherSocket = new PublisherSocket(PublisherSockerAddress);
+            pullSocket = new PullSocket(PullSocketAddress);
         }
 
         public void Run()
         {
             while (true)
             {
-                string message = PullSocket.ReceiveFrameString();
+                string message = pullSocket.ReceiveFrameString();
                 Console.WriteLine("Relay Received {0}", message);
-                PublisherSocket.SendFrame(message);
+                publisherSocket.SendFrame(message);
                 Thread.Sleep(500);
             }
         }
 
         public void ReceiveFrameString()
         {
-            NetMQMessage message = PullSocket.ReceiveMultipartMessage(4);
-            TaskEvent MyTask = TaskEvent.FromNetMQMessage(message);
+            NetMQMessage message = pullSocket.ReceiveMultipartMessage(4);
+            if (message.FrameCount != TaskEvent.MessageLength)
+            {
+                throw new Exception($"Invalid message received: Expected {TaskEvent.MessageLength}-Frames, got {message.FrameCount}-Frames");
+            }
+            TaskEvent MyTask = new();
+            MyTask.FromNetMQMessage(message);
             Console.WriteLine($"Relay Received {MyTask.Topic}-{MyTask.TaskId}-{MyTask.Message}");
-            TaskEventReceipt MyTaskReceipt = new TaskEventReceipt(MyTask.Topic, MyTask.TaskId, TaskEventProcessingState.Processed);
-            PublisherSocket.SendMultipartMessage(MyTaskReceipt.ToNetMQMessage());
+            TaskEventReceipt MyTaskReceipt = new TaskEventReceipt(MyTask.Topic, MyTask.TaskId, EnumTaskEventProcessingState.Processed);
+            publisherSocket.SendMultipartMessage(MyTaskReceipt.ToNetMQMessage());
         }
     }
 }

@@ -9,12 +9,13 @@ namespace HelloWorldDemo
 {
     class Program
     {
-        public static bool Callback(NetMQMessage message)
+        public static bool Callback(NetMQMessage MQMessage)
         {
-            TaskEventReceipt MyTaskReceipt = TaskEventReceipt.FromNetMQMessage(message);
+            TaskEventReceipt MyTaskReceipt = new();
+            MyTaskReceipt.FromNetMQMessage(MQMessage);
             Console.WriteLine("* Inside Callback");
             Console.WriteLine($"* From Server: topic={MyTaskReceipt.Topic}, State={MyTaskReceipt.ProcessingState}");
-            Console.WriteLine($"* Frame count={message.FrameCount}-MessageLength={TaskEventReceipt.MessageLength}");
+            Console.WriteLine($"* Frame count={MQMessage.FrameCount}-MessageLength={TaskEventReceipt.MessageLength}");
             return true;
         }
 
@@ -31,8 +32,8 @@ namespace HelloWorldDemo
 
             Bus.ReceiveFrameString();
 
-            List<(NetMQMessage, bool?)> CollectedEvents = BusClient.CollectEvents();
-            foreach ((NetMQMessage, bool?) message in CollectedEvents)
+            List<(NetMQMessage, bool?)> collectedEventReceipts = BusClient.CollectEventReceipts();
+            foreach ((NetMQMessage, bool?) message in collectedEventReceipts)
             {
                 Console.WriteLine($"Callback Processed: {message.Item2}");
             }
