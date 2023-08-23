@@ -1,4 +1,6 @@
 ﻿using NetMQ;
+using System.Collections.Specialized;
+using System.Configuration;
 using Transport.Generics;
 using Transport.Messages;
 
@@ -10,27 +12,33 @@ namespace Transport.Client
 
     public class ServiceBusClient
     {
-        private readonly SubscriberClient subscriberClient;
-        private readonly PushClient pushClient;
+        private readonly SubscriberClient Subscriber;
+        private readonly PushClient TaskSender;
         private readonly CallbackDict EventTopicCallbacks = new();
         public string[]? SubscribedTopics;
 
-        public ServiceBusClient(string PushSocketAddress, string SubscriberSocketAddress)
+        public ServiceBusClient(string TaskBusClientSocket, string ReceiptEventSocket)
         {
-            pushClient = new PushClient(PushSocketAddress);
-            subscriberClient = new SubscriberClient(SubscriberSocketAddress);
+            TaskSender = new PushClient(TaskBusClientSocket);
+            Subscriber = new SubscriberClient(ReceiptEventSocket);
+        }
+
+        public ServiceBusClient(ConnectionStringSettingsCollection Connections, NameValueCollection Settings)
+        {
+            TaskSender = new PushClient(Connections["TaskBusClientSocket"].ConnectionString);
+            Subscriber = new SubscriberClient(Connections["ReceiptEventSocket"].ConnectionString);
         }
 
         public void PushTask(TaskEvent Task)
         {
-            pushClient.SendMQMessage(Task.ToNetMQMessage());
+            TaskSender.SendMQMessage(Task.ToNetMQMessage());
         }
 
         public void RegisterServiceEventCallback(string ServiceName, Callback? CallbackFunction)
         {
             if (!EventTopicCallbacks.ContainsKey(ServiceName) && CallbackFunction is not null)
                 EventTopicCallbacks.Add(ServiceName, CallbackFunction);
-            subscriberClient.Subscribe(ServiceName);
+            Subscriber.Subscribe(ServiceName);
         }
 
         public void RegisterEventTopicAndCallback(CallbackDict EventTopicCallbacks)
@@ -41,7 +49,7 @@ namespace Transport.Client
         
         public MQMessageBuffer CollectEventReceipts(int batchSize = 1)
         {
-            return subscriberClient.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
+            return Subscriber.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
         }
     }
 }

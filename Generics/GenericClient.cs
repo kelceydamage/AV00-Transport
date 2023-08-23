@@ -22,9 +22,13 @@ namespace Transport.Generics
                     Console.WriteLine($"No events found");
                     break;
                 }
-                Callbacks.TryGetValue(message[0].ConvertToString(), out Callback? callback);
+                Callbacks.TryGetValue("DEFAULT", out Callback? callbackToFire); ;
+                Callbacks.TryGetValue(message[0].ConvertToString(), out Callback? specificCallback);
+                if (specificCallback is not null)
+                    callbackToFire = specificCallback;
+                    
                 // TODO: Make async
-                messageBuffer.Add((message, callback?.Invoke(message)));
+                messageBuffer.Add((message, callbackToFire?.Invoke(message)));
             }
             return messageBuffer;
         }
