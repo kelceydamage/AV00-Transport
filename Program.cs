@@ -1,12 +1,13 @@
-﻿using System;
-using System.ServiceModel.Channels;
-using NetMQ;
+﻿using NetMQ;
+using System.Configuration;
 using Transport.Client;
 using Transport.Relay;
 using Transport.Messages;
 
-namespace HelloWorldDemo
+namespace Transport
 {
+    using DataDict = Dictionary<string, object>;
+
     class Program
     {
         public static bool Callback(NetMQMessage MQMessage)
@@ -15,28 +16,30 @@ namespace HelloWorldDemo
             MyTaskReceipt.FromNetMQMessage(MQMessage);
             Console.WriteLine("* Inside Callback");
             Console.WriteLine($"* From Server: topic={MyTaskReceipt.Topic}, State={MyTaskReceipt.ProcessingState}");
-            Console.WriteLine($"* Frame count={MQMessage.FrameCount}-MessageLength={TaskEventReceipt.MessageLength}");
+            Console.WriteLine($"* Frame count={MQMessage.FrameCount}-MessageLength={Event.GetFrameCountByEventType(MyTaskReceipt.EventType)}");
             return true;
         }
 
-        static void Main(string[] args)
+        static void Main()
         {
-            Console.Title = "NetMQ HelloWorld";
+            Console.Title = "NetMQ Transport Relay";
 
-            var Bus = new ServiceBusRelay("@tcp://localhost:5556", "tcp://localhost:5557");
-            var BusClient = new ServiceBusClient("tcp://localhost:5556", "tcp://localhost:5557");
-            TaskEvent MyTask = new TaskEvent("MyTaskStream", "Hello World");
+            ServiceBusRelay Bus = new(
+                ConfigurationManager.ConnectionStrings["InboundTasks"].ConnectionString,
+                ConfigurationManager.ConnectionStrings["OutboundTaskReceipts"].ConnectionString,
+                int.Parse(ConfigurationManager.AppSettings["InboundTaskCollectionBatchSize"] ?? throw new Exception())
+            );
+            ServiceBusClient BusClient = new("tcp://localhost:5556", "tcp://localhost:5557");
+            TaskEvent MyTask = new("MyTaskStream", new DataDict() { { "message", "Hello World" } });
 
-            BusClient.RegisterEventTopicAndCallback("MyTaskStream", Callback);
+            BusClient.RegisterEventTopicAndCallback(MyTask.Topic, Callback);
             BusClient.PushTask(MyTask);
 
-            Bus.ReceiveFrameString();
+            Bus.ForwardMessage();
 
             List<(NetMQMessage, bool?)> collectedEventReceipts = BusClient.CollectEventReceipts();
             foreach ((NetMQMessage, bool?) message in collectedEventReceipts)
-            {
                 Console.WriteLine($"Callback Processed: {message.Item2}");
-            }
 
             Console.WriteLine();
             Console.Write("Press any key to exit...");

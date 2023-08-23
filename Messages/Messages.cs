@@ -1,9 +1,27 @@
 ﻿using NetMQ;
+using System.Text.Json;
 
 namespace Transport.Messages
 {
+    using DataDict = Dictionary<string, object>;
+
+    public static class Event
+    {
+        static readonly Dictionary<EnumEventType, short> FrameCountByEventType = new()
+        {
+            { EnumEventType.TaskEvent, 4},
+            { EnumEventType.TaskEventReceipt, 4 },
+        };
+
+        public static short GetFrameCountByEventType(EnumEventType EventType)
+        {
+            return FrameCountByEventType[EventType];
+        }
+    }
+
     public interface IEvent
     {
+        public const short FrameCount = 4;
         public EnumEventType EventType { get; }
         public NetMQMessage ToNetMQMessage();
         public void FromNetMQMessage(NetMQMessage netMessage);
@@ -16,11 +34,10 @@ namespace Transport.Messages
         private string topic;
         public readonly Guid TaskId { get => taskId; }
         private  Guid taskId;
-        public readonly string Message { get => message; }
-        private  string message;
-        public const short MessageLength = 4;
+        public readonly DataDict? Data { get => data; }
+        private DataDict? data;
 
-        public TaskEvent(string Topic, string Message, Guid? TaskId=null)
+        public TaskEvent(string Topic, DataDict DataDict, Guid? TaskId=null)
         {
             topic = Topic;
             if (TaskId != null)
@@ -31,16 +48,16 @@ namespace Transport.Messages
             {
                 taskId = Guid.NewGuid();
             }
-            message = Message;
+            data = DataDict;
         }
 
-        public NetMQMessage ToNetMQMessage()
+        public readonly NetMQMessage ToNetMQMessage()
         {
-            NetMQMessage MQMessage = new NetMQMessage();
+            NetMQMessage MQMessage = new();
             MQMessage.Append(Topic);
-            MQMessage.Append(MessageLength);
+            MQMessage.Append(EventType.ToString());
             MQMessage.Append(TaskId.ToString());
-            MQMessage.Append(Message);
+            MQMessage.Append(JsonSerializer.Serialize(Data));
             return MQMessage;
         }
 
@@ -48,7 +65,7 @@ namespace Transport.Messages
         {
             topic = MQMessage[0].ConvertToString();
             taskId = Guid.Parse(MQMessage[2].ConvertToString());
-            message = MQMessage[3].ConvertToString();
+            data = JsonSerializer.Deserialize<DataDict>(MQMessage[3].ConvertToString());
         }
     }
 
@@ -61,7 +78,6 @@ namespace Transport.Messages
         private Guid taskId;
         public readonly EnumTaskEventProcessingState ProcessingState { get => processingState; }
         public EnumTaskEventProcessingState processingState;
-        public const short MessageLength = 4;
 
         public TaskEventReceipt(string Topic, Guid TaskId, EnumTaskEventProcessingState ProcessingState)
         {
@@ -70,11 +86,11 @@ namespace Transport.Messages
             this.processingState = ProcessingState;
         }
 
-        public NetMQMessage ToNetMQMessage()
+        public readonly NetMQMessage ToNetMQMessage()
         {
-            NetMQMessage MQMessage = new NetMQMessage();
+            NetMQMessage MQMessage = new();
             MQMessage.Append(Topic);
-            MQMessage.Append(MessageLength);
+            MQMessage.Append(EventType.ToString());
             MQMessage.Append(TaskId.ToString());
             MQMessage.Append(ProcessingState.ToString());
             return MQMessage;

@@ -1,8 +1,6 @@
 ﻿using NetMQ;
-using NetMQ.Sockets;
 using Transport.Generics;
 using Transport.Messages;
-using Transport;
 
 namespace Transport.Client
 {
@@ -12,9 +10,9 @@ namespace Transport.Client
 
     public class ServiceBusClient
     {
-        private SubscriberClient subscriberClient;
-        private PushClient pushClient;
-        private CallbackDict EventTopicCallbacks = new CallbackDict();
+        private readonly SubscriberClient subscriberClient;
+        private readonly PushClient pushClient;
+        private readonly CallbackDict EventTopicCallbacks = new();
         public string[]? SubscribedTopics;
 
         public ServiceBusClient(string PushSocketAddress, string SubscriberSocketAddress)
@@ -25,7 +23,7 @@ namespace Transport.Client
 
         public void PushTask(TaskEvent Task)
         {
-            pushClient.PushMQMessage(Task.ToNetMQMessage());
+            pushClient.SendMQMessage(Task.ToNetMQMessage());
         }
 
         public void RegisterEventTopicAndCallback(string TopicName, Callback? CallbackFunction)
@@ -43,7 +41,7 @@ namespace Transport.Client
 
         public MQMessageBuffer CollectEventReceipts(int batchSize = 1)
         {
-            return subscriberClient.CollectAndInvokeMQMessages(batchSize, EventTopicCallbacks);
+            return subscriberClient.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
         }
     }
 }

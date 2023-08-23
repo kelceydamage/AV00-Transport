@@ -1,43 +1,43 @@
 ﻿using NetMQ;
-using NetMQ.Sockets;
 using Transport.Messages;
+using Transport.Generics;
 
 namespace Transport.Relay
 {
+    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
+
     public class ServiceBusRelay
     {
-        private PublisherSocket publisherSocket;
-        private PullSocket pullSocket;
+        private readonly PublisherClient publisherClient;
+        private readonly PullClient pullClient;
+        private readonly CallbackDict EventTopicCallbacks = new();
+        private readonly int batchSize;
 
-        public ServiceBusRelay(string? PullSocketAddress, string? PublisherSockerAddress)
+        public ServiceBusRelay(string PullSocketAddress, string PublisherSocketAddress, int BatchSize)
         {
-            publisherSocket = new PublisherSocket(PublisherSockerAddress);
-            pullSocket = new PullSocket(PullSocketAddress);
+            publisherClient = new PublisherClient(PublisherSocketAddress);
+            pullClient = new PullClient(PullSocketAddress);
+            EventTopicCallbacks.Add("MyTaskStream", DebugCallback);
+            batchSize = BatchSize;
         }
 
-        public void Run()
+        public void ForwardMessage()
         {
-            while (true)
-            {
-                string message = pullSocket.ReceiveFrameString();
-                Console.WriteLine("Relay Received {0}", message);
-                publisherSocket.SendFrame(message);
-                Thread.Sleep(500);
-            }
+            pullClient.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
         }
 
-        public void ReceiveFrameString()
+        private bool DebugCallback(NetMQMessage MQMessage)
         {
-            NetMQMessage message = pullSocket.ReceiveMultipartMessage(4);
-            if (message.FrameCount != TaskEvent.MessageLength)
-            {
-                throw new Exception($"Invalid message received: Expected {TaskEvent.MessageLength}-Frames, got {message.FrameCount}-Frames");
-            }
+            Console.WriteLine("RELAY: In Callback");
             TaskEvent MyTask = new();
-            MyTask.FromNetMQMessage(message);
-            Console.WriteLine($"Relay Received {MyTask.Topic}-{MyTask.TaskId}-{MyTask.Message}");
-            TaskEventReceipt MyTaskReceipt = new TaskEventReceipt(MyTask.Topic, MyTask.TaskId, EnumTaskEventProcessingState.Processed);
-            publisherSocket.SendMultipartMessage(MyTaskReceipt.ToNetMQMessage());
+            MyTask.FromNetMQMessage(MQMessage);
+            Console.WriteLine($"RELAY: Received {MyTask.Topic}-{MyTask.TaskId}");
+            if (MyTask.Data is not null)
+                foreach (KeyValuePair<string, object> data in MyTask.Data)
+                    Console.WriteLine($"RELAY: Received {data.Key}: {data.Value}");
+            TaskEventReceipt MyTaskReceipt = new(MyTask.Topic, MyTask.TaskId, EnumTaskEventProcessingState.Processed);
+            publisherClient.SendMQMessage(MyTaskReceipt.ToNetMQMessage());
+            return true;
         }
     }
 }
