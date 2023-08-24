@@ -18,7 +18,12 @@ Built on top of [NetMQ](https://netmq.readthedocs.io/en/latest/)
 
 ## Prebuilt Client
 * ServiceBusClient
+    * Any service that can issue tasks/control the physical robot.
 * TaskExecutorClient
+    * Any services that directly manage hardware and can execute tasks.
+
+### Future Clients
+* TBD but I'm sure something will come up. Especially when we start working with sensor data.
 
 ## System Overview
 ServiceBusClient 
