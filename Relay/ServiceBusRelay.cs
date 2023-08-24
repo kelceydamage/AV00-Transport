@@ -69,9 +69,6 @@ namespace Transport.Relay
                 case EnumEventType.TaskEvent:
                     ForwardTask(MQMessage, issueReceipts);
                     break;
-                case EnumEventType.TaskEventReceipt:
-                    receiptPublisher.SendMQMessage(MQMessage);
-                    break;
                 default:
                     throw new Exception($"Unknown Event Type: {eventTypeName}");
             }
