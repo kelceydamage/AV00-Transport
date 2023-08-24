@@ -6,21 +6,25 @@ namespace Transport.Client
 {
     public class TaskExecutorClient : BaseClient
     {
-        private readonly PublisherClient receiptPublisher;
+        private readonly PushClient ServiceBusProducer;
 
-        public TaskExecutorClient(string TaskEventSocket, string ReceiptEventSocket) : base(TaskEventSocket)
+        public TaskExecutorClient(string TaskEventSocket, string ServiceBusClientSocket) : base(
+            new SubscriberClient($">{TaskEventSocket}")
+        )
         {
-            receiptPublisher = new PublisherClient(ReceiptEventSocket);
+            ServiceBusProducer = new($">{ServiceBusClientSocket}");
         }
 
-        public TaskExecutorClient(ConnectionStringSettingsCollection Connections) : base(Connections["TaskEventSocket"].ConnectionString)
+        public TaskExecutorClient(ConnectionStringSettingsCollection Connections) : base(
+            new SubscriberClient($">{Connections["TaskEventSocket"].ConnectionString}")
+        )
         {
-            receiptPublisher = new PublisherClient(Connections["ReceiptEventSocket"].ConnectionString);
+            ServiceBusProducer = new($">{Connections["ServiceBusClientSocket"].ConnectionString}");
         }
 
         public void PublishReceipt(TaskEvent Task)
         {
-            receiptPublisher.SendMQMessage(Task.GenerateReceipt(EnumTaskEventProcessingState.Processed).ToNetMQMessage());
+            ServiceBusProducer.SendMQMessage(Task.GenerateReceipt(EnumTaskEventProcessingState.Processed).ToNetMQMessage());
         }
     }
 }

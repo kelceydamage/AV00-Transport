@@ -7,9 +7,9 @@ namespace Transport.Generics
     using Callback = Func<NetMQMessage, bool>;
     using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
-    internal class BaseClient
+    internal class BaseSocketClient
     {
-        public BaseClient() { }
+        public BaseSocketClient() { }
 
         protected static MQMessageBuffer CollectAndInvokeMQMessagesByBatch<T>(T Socket, int batchSize, short FrameCount, CallbackDict Callbacks) where T: NetMQSocket
         {
@@ -19,7 +19,6 @@ namespace Transport.Generics
             {
                 if (!Socket.TryReceiveMultipartMessage(TimeSpan.FromMilliseconds(500), message: ref message, FrameCount))
                 {
-                    Console.WriteLine($"No events found");
                     break;
                 }
                 Callbacks.TryGetValue("DEFAULT", out Callback? callbackToFire); ;
@@ -44,7 +43,7 @@ namespace Transport.Generics
         }
     }
 
-    internal class SubscriberClient: BaseClient
+    internal class SubscriberClient: BaseSocketClient, ISubscriber
     {
         private readonly SubscriberSocket socket;
         public SubscriberClient(string SocketURI): base()
@@ -62,7 +61,25 @@ namespace Transport.Generics
         }
     }
 
-    internal class PublisherClient: BaseClient
+    internal class BoundSubscriberClient : BaseSocketClient, ISubscriber
+    {
+        private readonly XSubscriberSocket socket;
+        public BoundSubscriberClient(string SocketURI) : base()
+        {
+            socket = new(SocketURI);
+        }
+        public void Subscribe(string Topic)
+        {
+            socket.Subscribe(Topic);
+        }
+
+        public override MQMessageBuffer CollectAndInvokeMQMessages(int batchSize, short FrameCount, CallbackDict? Callbacks = null)
+        {
+            return CollectAndInvokeMQMessagesByBatch(socket, batchSize, FrameCount, Callbacks ?? new CallbackDict());
+        }
+    }
+
+    internal class PublisherClient: BaseSocketClient, IPublisher
     {
         private readonly PublisherSocket socket;
         public PublisherClient(string SocketURI)
@@ -76,7 +93,21 @@ namespace Transport.Generics
         }
     }
 
-    internal class PushClient : BaseClient
+    internal class BoundPublisherClient : BaseSocketClient, IPublisher
+    {
+        private readonly XPublisherSocket socket;
+        public BoundPublisherClient(string SocketURI)
+        {
+            socket = new(SocketURI);
+        }
+
+        public void SendMQMessage(NetMQMessage message)
+        {
+            SendMQMessage(socket, message);
+        }
+    }
+
+    internal class PushClient : BaseSocketClient
     {
         private readonly PushSocket socket;
         public PushClient(string SocketURI)
@@ -90,7 +121,7 @@ namespace Transport.Generics
         }
     }
 
-    internal class PullClient: BaseClient
+    internal class PullClient: BaseSocketClient
     {
         private readonly PullSocket socket;
         public PullClient(string SocketURI)

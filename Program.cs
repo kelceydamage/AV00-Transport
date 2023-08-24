@@ -16,7 +16,7 @@ namespace Transport
             MyTaskReceipt.FromNetMQMessage(MQMessage);
             Console.WriteLine("* Inside Callback");
             Console.WriteLine($"* From Server: topic={MyTaskReceipt.ServiceName}, State={MyTaskReceipt.ProcessingState}");
-            Console.WriteLine($"* Frame count={MQMessage.FrameCount}-MessageLength={Event.GetFrameCountByEventType(MyTaskReceipt.EventType)}");
+            Console.WriteLine($"* Frame count={MQMessage.FrameCount}-MessageLength={Event.GetFrameCountByEventType(MyTaskReceipt.Type)}");
             return true;
         }
 
@@ -33,7 +33,7 @@ namespace Transport
 
             Bus.ForwardMessage();
 
-            List<(NetMQMessage, bool?)> collectedEventReceipts = BusClient.CollectEventReceipts();
+            List<(NetMQMessage, bool?)> collectedEventReceipts = BusClient.ProcessPendingEvents();
             foreach ((NetMQMessage, bool?) message in collectedEventReceipts)
                 Console.WriteLine($"Callback Processed: {message.Item2}");
 

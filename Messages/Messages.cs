@@ -22,18 +22,18 @@ namespace Transport.Messages
     public interface IEvent
     {
         public const short FrameCount = 4;
-        public EnumEventType EventType { get; }
+        public EnumEventType Type { get; }
         public NetMQMessage ToNetMQMessage();
         public void FromNetMQMessage(NetMQMessage netMessage);
     }
 
     public struct TaskEvent: IEvent
     {
-        public readonly EnumEventType EventType { get => EnumEventType.TaskEvent; }
+        public readonly EnumEventType Type { get => EnumEventType.TaskEvent; }
         public readonly string ServiceName { get => serviceName; }
         private string serviceName;
-        public readonly Guid TaskId { get => taskId; }
-        private  Guid taskId;
+        public readonly Guid Id { get => id; }
+        private  Guid id;
         public readonly DataDict? Data { get => data; }
         private DataDict? data;
 
@@ -42,11 +42,11 @@ namespace Transport.Messages
             serviceName = ServiceName;
             if (TaskId != null)
             {
-                taskId = (Guid)TaskId;
+                id = (Guid)TaskId;
             }
             else
             {
-                taskId = Guid.NewGuid();
+                id = Guid.NewGuid();
             }
             data = DataDict;
         }
@@ -55,8 +55,8 @@ namespace Transport.Messages
         {
             NetMQMessage MQMessage = new();
             MQMessage.Append(ServiceName);
-            MQMessage.Append(EventType.ToString());
-            MQMessage.Append(TaskId.ToString());
+            MQMessage.Append(Type.ToString());
+            MQMessage.Append(Id.ToString());
             MQMessage.Append(JsonSerializer.Serialize(Data));
             return MQMessage;
         }
@@ -64,30 +64,30 @@ namespace Transport.Messages
         public void FromNetMQMessage(NetMQMessage MQMessage)
         {
             serviceName = MQMessage[0].ConvertToString();
-            taskId = Guid.Parse(MQMessage[2].ConvertToString());
+            id = Guid.Parse(MQMessage[2].ConvertToString());
             data = JsonSerializer.Deserialize<DataDict>(MQMessage[3].ConvertToString());
         }
 
         public readonly TaskEventReceipt GenerateReceipt(EnumTaskEventProcessingState ProcessingState)
         {
-            return new TaskEventReceipt(ServiceName, TaskId, ProcessingState);
+            return new TaskEventReceipt(ServiceName, id, ProcessingState);
         }
     }
 
     public struct TaskEventReceipt: IEvent
     {
-        public readonly EnumEventType EventType { get => EnumEventType.TaskEventReceipt; }
+        public readonly EnumEventType Type { get => EnumEventType.TaskEventReceipt; }
         public readonly string ServiceName { get => serviceName; }
         private string serviceName;
-        public readonly Guid TaskId { get => taskId; }
-        private Guid taskId;
+        public readonly Guid Id { get => id; }
+        private Guid id;
         public readonly EnumTaskEventProcessingState ProcessingState { get => processingState; }
         public EnumTaskEventProcessingState processingState;
 
         public TaskEventReceipt(string ServiceName, Guid TaskId, EnumTaskEventProcessingState ProcessingState)
         {
             serviceName = ServiceName;
-            taskId = TaskId;
+            id = TaskId;
             processingState = ProcessingState;
         }
 
@@ -95,8 +95,8 @@ namespace Transport.Messages
         {
             NetMQMessage MQMessage = new();
             MQMessage.Append(ServiceName);
-            MQMessage.Append(EventType.ToString());
-            MQMessage.Append(TaskId.ToString());
+            MQMessage.Append(Type.ToString());
+            MQMessage.Append(Id.ToString());
             MQMessage.Append(ProcessingState.ToString());
             return MQMessage;
         }
@@ -104,7 +104,7 @@ namespace Transport.Messages
         public void FromNetMQMessage(NetMQMessage MQMessage)
         {
             serviceName = MQMessage[0].ConvertToString();
-            taskId = Guid.Parse(MQMessage[2].ConvertToString());
+            id = Guid.Parse(MQMessage[2].ConvertToString());
             processingState = (EnumTaskEventProcessingState)Enum.Parse(typeof(EnumTaskEventProcessingState), MQMessage[3].ConvertToString());
         }
     }

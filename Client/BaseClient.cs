@@ -11,11 +11,11 @@ namespace Transport.Client
     public class BaseClient
     {
         protected readonly CallbackDict EventTopicCallbacks = new();
-        internal readonly SubscriberClient Subscriber;
+        internal readonly ISubscriber Subscriber;
 
-        public BaseClient(string EventSocket)
+        public BaseClient(ISubscriber MQSubscriber)
         {
-            Subscriber = new SubscriberClient(EventSocket);
+            Subscriber = MQSubscriber;
         }
 
         public void RegisterServiceEventCallback(string ServiceName, Callback? CallbackFunction)
@@ -25,7 +25,7 @@ namespace Transport.Client
             Subscriber.Subscribe(ServiceName);
         }
 
-        public void RegisterEventTopicAndCallback(CallbackDict EventTopicCallbacks)
+        public void RegisterServiceEventCallback(CallbackDict EventTopicCallbacks)
         {
             foreach (KeyValuePair<string, Callback> EventTopicCallback in EventTopicCallbacks)
                 RegisterServiceEventCallback(EventTopicCallback.Key, EventTopicCallback.Value);

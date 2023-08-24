@@ -1,6 +1,4 @@
-﻿using NetMQ;
-using System.Collections.Specialized;
-using System.Configuration;
+﻿using System.Configuration;
 using Transport.Generics;
 using Transport.Messages;
 
@@ -8,21 +6,25 @@ namespace Transport.Client
 {
     public class ServiceBusClient: BaseClient
     {
-        private readonly PushClient TaskSender;
+        private readonly PushClient ServiceBusProducer;
 
-        public ServiceBusClient(string TaskBusClientSocket, string ReceiptEventSocket): base(ReceiptEventSocket)
+        public ServiceBusClient(string ServiceBusClientSocket, string ReceiptEventSocket) : base(
+            new SubscriberClient($"{ReceiptEventSocket}")
+        )
         {
-            TaskSender = new PushClient(TaskBusClientSocket);
+            ServiceBusProducer = new PushClient(ServiceBusClientSocket);
         }
 
-        public ServiceBusClient(ConnectionStringSettingsCollection Connections) : base(Connections["ReceiptEventSocket"].ConnectionString)
+        public ServiceBusClient(ConnectionStringSettingsCollection Connections) : base(
+            new SubscriberClient($"{Connections["ReceiptEventSocket"].ConnectionString}")
+        )
         {
-            TaskSender = new PushClient(Connections["TaskBusClientSocket"].ConnectionString);
+            ServiceBusProducer = new PushClient(Connections["ServiceBusClientSocket"].ConnectionString);
         }
 
         public void PushTask(TaskEvent Task)
         {
-            TaskSender.SendMQMessage(Task.ToNetMQMessage());
+            ServiceBusProducer.SendMQMessage(Task.ToNetMQMessage());
         }
     }
 }
