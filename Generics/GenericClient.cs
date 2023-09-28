@@ -1,13 +1,14 @@
 ﻿using NetMQ;
 using NetMQ.Sockets;
+using Transport.Messages;
 
 namespace Transport.Generics
 {
-    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
-    using Callback = Func<NetMQMessage, bool>;
-    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
+    using MQMessageBuffer = List<(TransportMessage, bool?)>;
+    using Callback = Func<TransportMessage, bool>;
+    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
 
-    internal class BaseSocketClient
+    public class BaseSocketClient
     {
         public BaseSocketClient() { }
 
@@ -27,12 +28,12 @@ namespace Transport.Generics
                     callbackToFire = specificCallback;
                     
                 // TODO: Make async
-                messageBuffer.Add((message, callbackToFire?.Invoke(message)));
+                messageBuffer.Add(((TransportMessage)message, callbackToFire?.Invoke((TransportMessage)message)));
             }
             return messageBuffer;
         }
 
-        protected static void SendMQMessage<T>(T Socket, NetMQMessage message) where T: NetMQSocket
+        protected static void SendMQMessage<T>(T Socket, TransportMessage message) where T: NetMQSocket
         {
             Socket.SendMultipartMessage(message);
         }
@@ -43,7 +44,7 @@ namespace Transport.Generics
         }
     }
 
-    internal class SubscriberClient: BaseSocketClient, ISubscriber
+    public class SubscriberClient: BaseSocketClient, ISubscriber
     {
         private readonly SubscriberSocket socket;
         public SubscriberClient(string SocketURI): base()
@@ -87,7 +88,7 @@ namespace Transport.Generics
             socket = new(SocketURI);
         }
 
-        public void SendMQMessage(NetMQMessage message)
+        public void SendMQMessage(TransportMessage message)
         {
             SendMQMessage(socket, message);
         }
@@ -101,13 +102,13 @@ namespace Transport.Generics
             socket = new(SocketURI);
         }
 
-        public void SendMQMessage(NetMQMessage message)
+        public void SendMQMessage(TransportMessage message)
         {
             SendMQMessage(socket, message);
         }
     }
 
-    internal class PushClient : BaseSocketClient
+    public class PushClient : BaseSocketClient
     {
         private readonly PushSocket socket;
         public PushClient(string SocketURI)
@@ -115,7 +116,7 @@ namespace Transport.Generics
             socket = new(SocketURI);
         }
 
-        public void SendMQMessage(NetMQMessage message)
+        public void SendMQMessage(TransportMessage message)
         {
             SendMQMessage(socket, message);
         }

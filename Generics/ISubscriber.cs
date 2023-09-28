@@ -1,9 +1,10 @@
 ﻿using NetMQ;
+using Transport.Messages;
 
 namespace Transport.Generics
 {
-    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
-    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
+    using MQMessageBuffer = List<(TransportMessage, bool?)>;
+    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
 
     public interface ISubscriber
     {

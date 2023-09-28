@@ -1,21 +1,22 @@
-﻿using NetMQ;
-using Transport.Generics;
+﻿using Transport.Generics;
 using Transport.Messages;
 
 namespace Transport.Client
 {
-    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
-    using Callback = Func<NetMQMessage, bool>;
-    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
+    using MQMessageBuffer = List<(TransportMessage, bool?)>;
+    using Callback = Func<TransportMessage, bool>;
+    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
 
-    public class BaseClient
+    public class BaseTransportClient
     {
         protected readonly CallbackDict EventTopicCallbacks = new();
         internal readonly ISubscriber Subscriber;
+        internal readonly short FrameCount;
 
-        public BaseClient(ISubscriber MQSubscriber)
+        public BaseTransportClient(ISubscriber MQSubscriber, short MessageFrameCount)
         {
             Subscriber = MQSubscriber;
+            FrameCount = MessageFrameCount;
         }
 
         public void RegisterServiceEventCallback(string ServiceName, Callback? CallbackFunction)
@@ -33,7 +34,7 @@ namespace Transport.Client
 
         public MQMessageBuffer ProcessPendingEvents(int batchSize = 1)
         {
-            return Subscriber.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
+            return Subscriber.CollectAndInvokeMQMessages(batchSize, FrameCount, EventTopicCallbacks);
         }
     }
 }

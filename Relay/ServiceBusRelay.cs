@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 
 namespace Transport.Relay
 {
-    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
+    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
 
     public class ServiceBusRelay
     {
@@ -16,8 +16,8 @@ namespace Transport.Relay
         private readonly CallbackDict EventTopicCallbacks = new();
         private readonly int batchSize;
         private readonly int batchDelayMs = 0;
-        private readonly bool issueReceipts = false;
         private readonly bool enableDebugLogging = false;
+        private readonly short transportMessageFrameCount;
 
         public ServiceBusRelay(string ServiceBusServerSocket, string ReceiptEventSocket, string TaskEventSocket, int BatchSize)
         {
@@ -34,27 +34,27 @@ namespace Transport.Relay
             taskPublisher = new BoundPublisherClient($"@{Connections["TaskEventSocket"].ConnectionString}");
             ServiceBusReceiver = new PullClient(Connections["ServiceBusServerSocket"].ConnectionString);
             EventTopicCallbacks.Add("DEFAULT", ReceiveMessageHandlerCallback);
+            transportMessageFrameCount = short.Parse(Settings["TransportMessageFrameCount"] ?? throw new Exception());
             batchSize = int.Parse(Settings["RelayInboundTaskCollectionBatchSize"] ?? throw new Exception());
-            issueReceipts = bool.Parse(Settings["RelayIssueReceipts"] ?? throw new Exception());
             enableDebugLogging = bool.Parse(Settings["RelayEnableDebugLogging"] ?? throw new Exception());
             batchDelayMs = int.Parse(Settings["RelayInboundTaskCollectionBatchDelayMs"] ?? throw new Exception());
         }
 
         public void ForwardMessage()
         {
-            ServiceBusReceiver.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
+            ServiceBusReceiver.CollectAndInvokeMQMessages(batchSize, transportMessageFrameCount, EventTopicCallbacks);
         }
 
         public void ForwardMessages()
         {
             while (true)
             {
-                ServiceBusReceiver.CollectAndInvokeMQMessages(batchSize, IEvent.FrameCount, EventTopicCallbacks);
+                ServiceBusReceiver.CollectAndInvokeMQMessages(batchSize, transportMessageFrameCount, EventTopicCallbacks);
                 Thread.Sleep(batchDelayMs);
             }
         }
 
-        private bool ReceiveMessageHandlerCallback(NetMQMessage MQMessage)
+        private bool ReceiveMessageHandlerCallback(TransportMessage MQMessage)
         {
             if (enableDebugLogging)
             {
@@ -66,29 +66,18 @@ namespace Transport.Relay
             string eventTypeName = MQMessage[1].ConvertToString();
             switch(Enum.Parse<EnumEventType>(eventTypeName))
             {
-                case EnumEventType.TaskEvent:
-                    Console.WriteLine($"RELAY: [Forwarding] TaskEvent for event: {MQMessage[2].ConvertToString()}");
-                    ForwardTask(MQMessage, issueReceipts);
+                case EnumEventType.Event:
+                    Console.WriteLine($"RELAY: [Forwarding] Event for event: {MQMessage[2].ConvertToString()}");
+                    taskPublisher.SendMQMessage(MQMessage);
                     break;
-                case EnumEventType.TaskEventReceipt:
-                    Console.WriteLine($"RELAY: [Forwarding] TaskEventReceipt for event: {MQMessage[2].ConvertToString()}");
+                case EnumEventType.EventReceipt:
+                    Console.WriteLine($"RELAY: [Forwarding] EventReceipt for event: {MQMessage[2].ConvertToString()}");
                     receiptPublisher.SendMQMessage(MQMessage);
                     break;
                 default:
                     throw new Exception($"Unknown Event Type: {eventTypeName}");
             }
             return true;
-        }
-
-        private void ForwardTask(NetMQMessage MQMessage, bool IssueReceipts)
-        {
-            taskPublisher.SendMQMessage(MQMessage);
-            if (IssueReceipts)
-            {
-                TaskEvent currentTask = new();
-                currentTask.FromNetMQMessage(MQMessage);
-                receiptPublisher.SendMQMessage(currentTask.GenerateReceipt(EnumTaskEventProcessingState.Processing).ToNetMQMessage());
-            }
         }
     }
 }
