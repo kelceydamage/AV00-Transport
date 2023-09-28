@@ -30,7 +30,7 @@ namespace Transport
 
             PushClient BusClient = new(ConfigurationManager.ConnectionStrings["ServiceBusClientSocket"].ConnectionString);
 
-            TransportMessage MyTask = new();
+            NetMQMessage MyTask = new();
             MyTask.Append("Test");
 
             BusClient.SendMQMessage(MyTask);
