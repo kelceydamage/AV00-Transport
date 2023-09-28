@@ -1,11 +1,11 @@
-﻿using Transport.Generics;
-using Transport.Messages;
+﻿using NetMQ;
+using Transport.Generics;
 
 namespace Transport.Client
 {
-    using MQMessageBuffer = List<(TransportMessage, bool?)>;
-    using Callback = Func<TransportMessage, bool>;
-    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
+    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
+    using Callback = Func<NetMQMessage, bool>;
+    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
     public class BaseTransportClient
     {

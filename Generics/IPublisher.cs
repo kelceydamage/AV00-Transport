@@ -5,6 +5,6 @@ namespace Transport.Generics
 {
     public interface IPublisher
     {
-        public void SendMQMessage(TransportMessage message);
+        public void SendMQMessage(NetMQMessage message);
     }
 }

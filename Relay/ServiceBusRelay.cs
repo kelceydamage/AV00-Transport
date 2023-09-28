@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 
 namespace Transport.Relay
 {
-    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
+    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
     public class ServiceBusRelay
     {
@@ -54,7 +54,7 @@ namespace Transport.Relay
             }
         }
 
-        private bool ReceiveMessageHandlerCallback(TransportMessage MQMessage)
+        private bool ReceiveMessageHandlerCallback(NetMQMessage MQMessage)
         {
             if (enableDebugLogging)
             {

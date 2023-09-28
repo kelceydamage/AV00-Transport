@@ -4,9 +4,9 @@ using Transport.Messages;
 
 namespace Transport.Generics
 {
-    using MQMessageBuffer = List<(TransportMessage, bool?)>;
-    using Callback = Func<TransportMessage, bool>;
-    using CallbackDict = Dictionary<string, Func<TransportMessage, bool>>;
+    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
+    using Callback = Func<NetMQMessage, bool>;
+    using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
     public class BaseSocketClient
     {
@@ -28,12 +28,12 @@ namespace Transport.Generics
                     callbackToFire = specificCallback;
                     
                 // TODO: Make async
-                messageBuffer.Add(((TransportMessage)message, callbackToFire?.Invoke((TransportMessage)message)));
+                messageBuffer.Add((message, callbackToFire?.Invoke(message)));
             }
             return messageBuffer;
         }
 
-        protected static void SendMQMessage<T>(T Socket, TransportMessage message) where T: NetMQSocket
+        protected static void SendMQMessage<T>(T Socket, NetMQMessage message) where T: NetMQSocket
         {
             Socket.SendMultipartMessage(message);
         }
@@ -88,7 +88,7 @@ namespace Transport.Generics
             socket = new(SocketURI);
         }
 
-        public void SendMQMessage(TransportMessage message)
+        public void SendMQMessage(NetMQMessage message)
         {
             SendMQMessage(socket, message);
         }
@@ -102,7 +102,7 @@ namespace Transport.Generics
             socket = new(SocketURI);
         }
 
-        public void SendMQMessage(TransportMessage message)
+        public void SendMQMessage(NetMQMessage message)
         {
             SendMQMessage(socket, message);
         }
@@ -116,7 +116,7 @@ namespace Transport.Generics
             socket = new(SocketURI);
         }
 
-        public void SendMQMessage(TransportMessage message)
+        public void SendMQMessage(NetMQMessage message)
         {
             SendMQMessage(socket, message);
         }

@@ -1,18 +1,15 @@
 ﻿using NetMQ;
-using System;
 
 namespace Transport.Messages
 {
-    public class TransportMessage : NetMQMessage { }
-
     public class BaseEvent
     {
-        public virtual TransportMessage Serialize()
+        public virtual NetMQMessage Serialize()
         {
             throw new System.NotImplementedException();
         }
 
-        public virtual void Deserialize(TransportMessage WireMessage)
+        public virtual void Deserialize(NetMQMessage WireMessage)
         {
             throw new System.NotImplementedException();
         }
