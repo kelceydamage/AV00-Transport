@@ -13,7 +13,7 @@ namespace Transport.Messages
         public Guid Id { get => id; }
         private Guid id;
         public T? Data { get => data; }
-        private T? data;
+        protected T? data;
 
         public Event(string ServiceName, T? Data, EnumEventType Type = EnumEventType.Event, Guid? TaskId = null)
         {
