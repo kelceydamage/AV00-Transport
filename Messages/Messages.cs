@@ -65,28 +65,32 @@ namespace Transport.Messages
             return new(WireMessage);
         }
 
-        public Event<TaskExecution> GenerateReceipt(EnumTaskEventProcessingState ExecutionState)
+        public Event<TaskExecution> GenerateReceipt(EnumEventProcessingState ExecutionState, string ReasonForExecutionState)
         {
-            return new Event<TaskExecution>(ServiceName, new TaskExecution(ExecutionState), EnumEventType.EventReceipt, Id);
+            return new Event<TaskExecution>(ServiceName, new TaskExecution(ExecutionState, ReasonForExecutionState), EnumEventType.EventReceipt, Id);
         }
     }
 
     public readonly struct TaskExecution
     {
-        public EnumTaskEventProcessingState State { get => state; }
-        private readonly EnumTaskEventProcessingState state;
+        public EnumEventProcessingState State { get => state; }
+        private readonly EnumEventProcessingState state;
+        public string ReasonForState { get => reasonForState; }
+        private readonly string reasonForState;
 
-        public TaskExecution(EnumTaskEventProcessingState ExecutionState)
+        public TaskExecution(EnumEventProcessingState ExecutionState, string ReasonForExecutionState = "")
         {
             state = ExecutionState;
+            reasonForState = ReasonForExecutionState;
         }
     }
 
-    public enum EnumTaskEventProcessingState
+    public enum EnumEventProcessingState
     {
         Unprocessed,
         Processing,
         Completed,
+        Rejected,
         Error,
         Cancelled
     }
