@@ -1,10 +1,9 @@
 ﻿using NetMQ;
 using NetMQ.Sockets;
-using Transport.Messages;
 
 namespace Transport.Generics
 {
-    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
+    using MQMessageBuffer = Queue<(NetMQMessage, bool?)>;
     using Callback = Func<NetMQMessage, bool>;
     using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
@@ -28,7 +27,7 @@ namespace Transport.Generics
                     callbackToFire = specificCallback;
                     
                 // TODO: Make async
-                messageBuffer.Add((message, callbackToFire?.Invoke(message)));
+                messageBuffer.Enqueue((message, callbackToFire?.Invoke(message)));
             }
             return messageBuffer;
         }

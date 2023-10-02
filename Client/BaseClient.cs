@@ -3,7 +3,7 @@ using Transport.Generics;
 
 namespace Transport.Client
 {
-    using MQMessageBuffer = List<(NetMQMessage, bool?)>;
+    using MQMessageBuffer = Queue<(NetMQMessage, bool?)>;
     using Callback = Func<NetMQMessage, bool>;
     using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
