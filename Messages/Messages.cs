@@ -30,6 +30,13 @@ namespace Transport.Messages
             type = Type;
         }
 
+        public Event(string ServiceName, Guid TaskId, EnumEventType Type = EnumEventType.Event)
+        {
+            serviceName = ServiceName;
+            id = TaskId;
+            type = Type;
+        }
+
         public Event(NetMQMessage WireMessage)
         {
             serviceName = WireMessage[0].ConvertToString();
