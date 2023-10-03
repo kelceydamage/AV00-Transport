@@ -92,6 +92,26 @@ namespace Transport.Messages
         }
     }
 
+    public readonly struct LogMessage
+    {
+        public Guid Id => id;
+        private readonly Guid id;
+        public string ServiceName => serviceName;
+        private readonly string serviceName;
+        public string LogType => logType;
+        private readonly string logType;
+        public string Message => message;
+        private readonly string message;
+
+        public LogMessage(Guid EventId, string ServiceName, string LogType, string Message)
+        {
+            id = EventId;
+            serviceName = ServiceName;
+            logType = LogType;
+            message = Message;
+        }
+    }
+
     public enum EnumEventProcessingState
     {
         Unprocessed,
@@ -105,6 +125,7 @@ namespace Transport.Messages
     public enum EnumEventType
     {
         Event,
-        EventReceipt
+        EventReceipt,
+        EventLog,
     }
 }
