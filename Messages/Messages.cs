@@ -1,6 +1,7 @@
 ﻿using NetMQ;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AV00_Shared.Logging;
 
 namespace Transport.Messages
 {
@@ -98,12 +99,12 @@ namespace Transport.Messages
         private readonly Guid id;
         public string ServiceName => serviceName;
         private readonly string serviceName;
-        public string LogType => logType;
-        private readonly string logType;
+        public EnumLogMessageType LogType => logType;
+        private readonly EnumLogMessageType logType;
         public string Message => message;
         private readonly string message;
 
-        public LogMessage(Guid EventId, string ServiceName, string LogType, string Message)
+        public LogMessage(Guid EventId, string ServiceName, EnumLogMessageType LogType, string Message)
         {
             id = EventId;
             serviceName = ServiceName;
