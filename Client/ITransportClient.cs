@@ -12,6 +12,7 @@ namespace Transport.Client
         public void RegisterServiceEventCallback(string ServiceName, Callback? CallbackFunction);
         public void RegisterServiceEventCallback(CallbackDict EventTopicCallbacks);
         public MQMessageBuffer ProcessPendingEvents(int batchSize = 1);
+        public Task<MQMessageBuffer> ProcessPendingEventsAsync(int batchSize = 1);
         public Task PushEventAsync(IEvent Event);
         public void PushEvent(IEvent Event);
     }

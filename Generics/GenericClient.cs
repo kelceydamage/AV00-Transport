@@ -26,7 +26,6 @@ namespace Transport.Generics
                 if (specificCallback is not null)
                     callbackToFire = specificCallback;
                     
-                // TODO: Make async
                 messageBuffer.Enqueue((message, callbackToFire?.Invoke(message)));
             }
             return messageBuffer;
@@ -42,7 +41,7 @@ namespace Transport.Generics
             throw new NotImplementedException();
         }
     }
-
+     
     public class SubscriberClient: BaseSocketClient, ISubscriber
     {
         private readonly SubscriberSocket socket;

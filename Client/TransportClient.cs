@@ -41,7 +41,7 @@ namespace Transport.Client
 
         public async Task PushEventAsync(IEvent Event)
         {
-            await Task.Run(() => { ServiceBusProducer.SendMQMessage(Event.Serialize()); });
+            await Task.Run(() => ServiceBusProducer.SendMQMessage(Event.Serialize()));
         }
     }
 }
