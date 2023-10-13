@@ -1,7 +1,11 @@
-# AV00-Transport
+# AV00 Transport
 Inter-Service communication for AV00
 
 Built on top of [NetMQ](https://netmq.readthedocs.io/en/latest/)
+
+## Info
+Details can be found here in the project plan readme
+[AV00 Primary Repo](https://github.com/kelceydamage/AV00)
 
 ## Message Types
 * TaskEvent
