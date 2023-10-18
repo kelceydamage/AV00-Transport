@@ -6,6 +6,8 @@ namespace Transport.Event
     {
         public const short FrameCount = 4;
         public EnumEventType Type { get; }
+        public string ServiceName { get;  }
+        public Guid Id { get; }
         public NetMQMessage Serialize();
     }
 }

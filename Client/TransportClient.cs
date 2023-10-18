@@ -10,14 +10,14 @@ namespace Transport.Client
     {
         private readonly PushClient ServiceBusProducer;
 
-        public TransportClient(string SubscriberEventSocket, string PushEventSocket, short FrameCount) : base(
+        public TransportClient(string SubscriberEventSocket, string PushEventSocket, short TransportMessageFrameCount) : base(
             new SubscriberClient($">{SubscriberEventSocket}"),
-            FrameCount
+            TransportMessageFrameCount
         )
         {
             ServiceBusProducer = new($">{PushEventSocket}");
         }
-
+ 
         public TransportClient(ConnectionStringSettingsCollection Connections, NameValueCollection Settings) : base(
             new SubscriberClient($">{Connections["SubscribeEventSocket"].ConnectionString}"),
             short.Parse(Settings["TransportMessageFrameCount"] ?? throw new Exception())

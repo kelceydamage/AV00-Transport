@@ -12,7 +12,7 @@ namespace Transport.Event
         EventLog,
     }
 
-    public class Event<T>
+    public class Event<T> : IEvent
     {
         public EnumEventType Type { get => type; }
         private readonly EnumEventType type;

@@ -11,7 +11,7 @@ namespace Transport.Relay
     public class ServiceBusRelay
     {
         private readonly PublisherClient receiptPublisher;
-        private readonly BoundPublisherClient taskPublisher;
+        private readonly BoundPublisherClient eventPublisher;
         private readonly PullClient ServiceBusReceiver;
         private readonly CallbackDict EventTopicCallbacks = new();
         private readonly int batchSize;
@@ -22,7 +22,7 @@ namespace Transport.Relay
         public ServiceBusRelay(string ServiceBusServerSocket, string ReceiptEventSocket, string TaskEventSocket, int BatchSize)
         {
             receiptPublisher = new PublisherClient(ReceiptEventSocket);
-            taskPublisher = new BoundPublisherClient(TaskEventSocket);
+            eventPublisher = new BoundPublisherClient(TaskEventSocket);
             ServiceBusReceiver = new PullClient(ServiceBusServerSocket);
             EventTopicCallbacks.Add("MyTaskStream", ReceiveMessageHandlerCallback);
             batchSize = BatchSize;
@@ -31,7 +31,7 @@ namespace Transport.Relay
         public ServiceBusRelay(ConnectionStringSettingsCollection Connections, NameValueCollection Settings)
         {
             receiptPublisher = new PublisherClient($"{Connections["ReceiptEventSocket"].ConnectionString}");
-            taskPublisher = new BoundPublisherClient($"@{Connections["TaskEventSocket"].ConnectionString}");
+            eventPublisher = new BoundPublisherClient($"@{Connections["TaskEventSocket"].ConnectionString}");
             ServiceBusReceiver = new PullClient(Connections["ServiceBusServerSocket"].ConnectionString);
             EventTopicCallbacks.Add("DEFAULT", ReceiveMessageHandlerCallback);
             transportMessageFrameCount = short.Parse(Settings["TransportMessageFrameCount"] ?? throw new Exception());
@@ -68,7 +68,7 @@ namespace Transport.Relay
             {
                 case EnumEventType.Event:
                     Console.WriteLine($"RELAY: [Forwarding] Event for event: {MQMessage[2].ConvertToString()}");
-                    taskPublisher.SendMQMessage(MQMessage);
+                    eventPublisher.SendMQMessage(MQMessage);
                     break;
                 case EnumEventType.EventReceipt:
                     Console.WriteLine($"RELAY: [Forwarding] EventReceipt for event: {MQMessage[2].ConvertToString()}");
