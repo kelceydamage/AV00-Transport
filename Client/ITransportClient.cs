@@ -1,5 +1,5 @@
 ﻿using NetMQ;
-using Transport.Messages;
+using Transport.Event;
 
 namespace Transport.Client
 {

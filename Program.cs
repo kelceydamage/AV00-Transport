@@ -1,8 +1,6 @@
 ﻿using NetMQ;
 using System.Configuration;
-using Transport.Client;
 using Transport.Generics;
-using Transport.Messages;
 using Transport.Relay;
 
 namespace Transport

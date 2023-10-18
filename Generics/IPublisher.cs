@@ -1,5 +1,4 @@
 ﻿using NetMQ;
-using Transport.Messages;
 
 namespace Transport.Generics
 {

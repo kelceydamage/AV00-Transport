@@ -1,6 +1,6 @@
 ﻿using NetMQ;
 
-namespace Transport.Messages
+namespace Transport.Event
 {
     public interface IEvent
     {

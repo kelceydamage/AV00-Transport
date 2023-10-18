@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using System.Configuration;
 using Transport.Generics;
-using Transport.Messages;
+using Transport.Event;
 
 namespace Transport.Client
 {
