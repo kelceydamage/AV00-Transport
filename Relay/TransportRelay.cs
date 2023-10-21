@@ -8,31 +8,31 @@ namespace Transport.Relay
 {
     using CallbackDict = Dictionary<string, Func<NetMQMessage, bool>>;
 
-    public class ServiceBusRelay
+    public class TransportRelay
     {
         private readonly PublisherClient receiptPublisher;
         private readonly BoundPublisherClient eventPublisher;
-        private readonly PullClient ServiceBusReceiver;
+        private readonly PullClient transportRelayReceiver;
         private readonly CallbackDict EventTopicCallbacks = new();
         private readonly int batchSize;
         private readonly int batchDelayMs = 0;
         private readonly bool enableDebugLogging = false;
         private readonly short transportMessageFrameCount;
 
-        public ServiceBusRelay(string ServiceBusServerSocket, string ReceiptEventSocket, string TaskEventSocket, int BatchSize)
+        public TransportRelay(string ServiceBusServerSocket, string ReceiptEventSocket, string TaskEventSocket, int BatchSize)
         {
             receiptPublisher = new PublisherClient(ReceiptEventSocket);
             eventPublisher = new BoundPublisherClient(TaskEventSocket);
-            ServiceBusReceiver = new PullClient(ServiceBusServerSocket);
+            transportRelayReceiver = new PullClient(ServiceBusServerSocket);
             EventTopicCallbacks.Add("MyTaskStream", ReceiveMessageHandlerCallback);
             batchSize = BatchSize;
         }
 
-        public ServiceBusRelay(ConnectionStringSettingsCollection Connections, NameValueCollection Settings)
+        public TransportRelay(ConnectionStringSettingsCollection Connections, NameValueCollection Settings)
         {
-            receiptPublisher = new PublisherClient($"{Connections["ReceiptEventSocket"].ConnectionString}");
-            eventPublisher = new BoundPublisherClient($"@{Connections["TaskEventSocket"].ConnectionString}");
-            ServiceBusReceiver = new PullClient(Connections["ServiceBusServerSocket"].ConnectionString);
+            receiptPublisher = new PublisherClient($"{Connections["EventReceiptSocket"].ConnectionString}");
+            eventPublisher = new BoundPublisherClient($"@{Connections["EventSocket"].ConnectionString}");
+            transportRelayReceiver = new PullClient(Connections["TransportRelayServerSocket"].ConnectionString);
             EventTopicCallbacks.Add("DEFAULT", ReceiveMessageHandlerCallback);
             transportMessageFrameCount = short.Parse(Settings["TransportMessageFrameCount"] ?? throw new Exception());
             batchSize = int.Parse(Settings["RelayInboundTaskCollectionBatchSize"] ?? throw new Exception());
@@ -42,14 +42,14 @@ namespace Transport.Relay
 
         public void ForwardMessage()
         {
-            ServiceBusReceiver.CollectAndInvokeMQMessages(batchSize, transportMessageFrameCount, EventTopicCallbacks);
+            transportRelayReceiver.CollectAndInvokeMQMessages(batchSize, transportMessageFrameCount, EventTopicCallbacks);
         }
 
         public void ForwardMessages()
         {
             while (true)
             {
-                ServiceBusReceiver.CollectAndInvokeMQMessages(batchSize, transportMessageFrameCount, EventTopicCallbacks);
+                transportRelayReceiver.CollectAndInvokeMQMessages(batchSize, transportMessageFrameCount, EventTopicCallbacks);
                 Thread.Sleep(batchDelayMs);
             }
         }

@@ -8,40 +8,40 @@ namespace Transport.Client
 {
     public class TransportClient : BaseTransportClient, ITransportClient
     {
-        private readonly PushClient ServiceBusProducer;
+        private readonly PushClient transportRelayClient;
 
         public TransportClient(string SubscriberEventSocket, string PushEventSocket, short TransportMessageFrameCount) : base(
             new SubscriberClient($">{SubscriberEventSocket}"),
             TransportMessageFrameCount
         )
         {
-            ServiceBusProducer = new($">{PushEventSocket}");
+            transportRelayClient = new($">{PushEventSocket}");
         }
  
         public TransportClient(ConnectionStringSettingsCollection Connections, NameValueCollection Settings) : base(
-            new SubscriberClient($">{Connections["SubscribeEventSocket"].ConnectionString}"),
+            new SubscriberClient($">{Connections["EventReceiptSocket"].ConnectionString}"),
             short.Parse(Settings["TransportMessageFrameCount"] ?? throw new Exception())
         )
         {
-            ServiceBusProducer = new($">{Connections["PushEventSocket"].ConnectionString}");
+            transportRelayClient = new($">{Connections["TransportRelayClientSocket"].ConnectionString}");
         }
 
         public TransportClient(IConfigurationService Configuration) : base(
-            new SubscriberClient($">{Configuration.ConnectionStrings["SubscribeEventSocket"].ConnectionString}"),
+            new SubscriberClient($">{Configuration.ConnectionStrings["EventReceiptSocket"].ConnectionString}"),
             short.Parse(Configuration.AppSettings["TransportMessageFrameCount"] ?? throw new Exception())
         )
         {
-            ServiceBusProducer = new($">{Configuration.ConnectionStrings["PushEventSocket"].ConnectionString}");
+            transportRelayClient = new($">{Configuration.ConnectionStrings["TransportRelayClientSocket"].ConnectionString}");
         }
 
         public void PushEvent(IEvent Event)
         {
-            ServiceBusProducer.SendMQMessage(Event.Serialize());
+            transportRelayClient.SendMQMessage(Event.Serialize());
         }
 
         public async Task PushEventAsync(IEvent Event)
         {
-            await Task.Run(() => ServiceBusProducer.SendMQMessage(Event.Serialize()));
+            await Task.Run(() => transportRelayClient.SendMQMessage(Event.Serialize()));
         }
     }
 }

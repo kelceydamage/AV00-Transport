@@ -22,7 +22,7 @@ namespace Transport
         {
             Console.Title = "NetMQ Transport Relay";
 
-            ServiceBusRelay Bus = new(ConfigurationManager.ConnectionStrings, ConfigurationManager.AppSettings);
+            TransportRelay Bus = new(ConfigurationManager.ConnectionStrings, ConfigurationManager.AppSettings);
 
             SubscriberClient subscriber = new(ConfigurationManager.ConnectionStrings["TaskEventSocket"].ConnectionString);
 
