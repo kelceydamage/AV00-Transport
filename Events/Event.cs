@@ -19,7 +19,7 @@ namespace Transport.Event
         public string ServiceName { get => serviceName; }
         private readonly string serviceName;
         public Guid Id { get => id; }
-        private Guid id;
+        private readonly Guid id;
         public T Model { get => model; }
         protected T model;
 
