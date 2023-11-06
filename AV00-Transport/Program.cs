@@ -24,9 +24,9 @@ namespace Transport
 
             TransportRelay Bus = new(ConfigurationManager.ConnectionStrings, ConfigurationManager.AppSettings);
 
-            SubscriberClient subscriber = new(ConfigurationManager.ConnectionStrings["TaskEventSocket"].ConnectionString);
+            SubscriberClient subscriber = new(ConfigurationManager.ConnectionStrings["EventSocket"].ConnectionString);
 
-            PushClient BusClient = new(ConfigurationManager.ConnectionStrings["ServiceBusClientSocket"].ConnectionString);
+            PushClient BusClient = new(ConfigurationManager.ConnectionStrings["TransportRelayClientSocket"].ConnectionString);
 
             NetMQMessage MyTask = new();
             MyTask.Append("Test");
