@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\AV00-Shared\AV00-Shared.csproj" />
+    <ProjectReference Include="..\..\AV00-Shared\AV00-Shared\AV00-Shared.csproj" />
   </ItemGroup>
 
 </Project>
